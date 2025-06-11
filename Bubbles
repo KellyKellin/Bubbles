@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивные элементы для Genially</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: transparent;
+            font-family: Arial, sans-serif;
+        }
+        .bubble {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.3s;
+            user-select: none;
+            border-radius: 50%;
+            box-shadow: inset 0 -10px 20px rgba(255,255,255,0.5), 
+                        inset 0 10px 20px rgba(0,0,0,0.1),
+                        0 4px 10px rgba(0,0,0,0.2);
+        }
+        .bubble:hover {
+            transform: scale(1.1);
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .question-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 2000;
+            max-width: 80%;
+            width: 300px;
+        }
+        .question-modal h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            color: #888;
+        }
+        .close-btn:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h3>Панель управления</h3>
+        <div>
+            <label>Количество элементов: <input type="number" id="elementCount" value="5" min="1" max="20"></label>
+            <button id="generateBtn">Создать</button>
+        </div>
+    </div>
+
+    <div id="question-modal" class="question-modal">
+        <span class="close-btn" onclick="closeQuestionModal()">×</span>
+        <h3>Вопрос</h3>
+        <p id="question-text"></p>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let elements = [];
+        
+        // Цвета для пузырьков
+        const bubbleColors = [
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)',
+            'rgba(199, 199, 199, 0.7)',
+            'rgba(83, 102, 255, 0.7)',
+            'rgba(40, 159, 64, 0.7)',
+            'rgba(210, 99, 132, 0.7)'
+        ];
+        
+        // Уникальные вопросы для элементов
+        const questions = [
+            "Name 5 farm animals",
+            "How many fingers have you got?",
+            "What's your name?",
+            "Name 3 forms of GO",
+            "Correct the mistake: He go to school",
+            "Какое самое глубокое озеро в мире?",
+            "Кто изобрел телефон?",
+            "Как называется самая длинная река в мире?",
+            "Сколько континентов на Земле?",
+            "Кто был первым человеком в космосе?"
+        ];
+
+        // Функция создания элементов
+        function createElements(count) {
+            // Удаляем старые элементы
+            elements.forEach(el => document.body.removeChild(el.element));
+            elements = [];
+            
+            // Создаем новые элементы
+            for (let i = 0; i < count; i++) {
+                const size = getRandom(50, 150);
+                const element = document.createElement("div");
+                element.className = "bubble";
+                
+                // Случайный цвет из массива
+                const color = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
+                element.style.backgroundColor = color;
+                
+                element.style.width = `${size}px`;
+                element.style.height = `${size}px`;
+                element.style.left = `${getRandom(0, window.innerWidth - size)}px`;
+                element.style.top = `${getRandom(0, window.innerHeight - size)}px`;
+                
+                // Назначаем уникальный вопрос (по кругу, если элементов больше чем вопросов)
+                const question = questions[i % questions.length];
+                element.dataset.question = question;
+                
+                // Настройка движения
+                const speedX = getRandom(1, 3) * (Math.random() > 0.5 ? 1 : -1);
+                const speedY = getRandom(1, 3) * (Math.random() > 0.5 ? 1 : -1);
+                
+                // Добавляем обработчик клика
+                element.addEventListener("click", function(e) {
+                    e.stopPropagation();
+                    showQuestion(this.dataset.question);
+                    this.style.opacity = "0";
+                    setTimeout(() => {
+                        document.body.removeChild(this);
+                        elements = elements.filter(el => el.element !== this);
+                    }, 300);
+                });
+                
+                document.body.appendChild(element);
+                
+                elements.push({
+                    element: element,
+                    x: parseFloat(element.style.left),
+                    y: parseFloat(element.style.top),
+                    speedX: speedX,
+                    speedY: speedY,
+                    size: size
+                });
+            }
+        }
+        
+        // Показать вопрос
+        function showQuestion(question) {
+            document.getElementById("question-text").textContent = question;
+            document.getElementById("question-modal").style.display = "block";
+        }
+        
+        // Закрыть модальное окно
+        function closeQuestionModal() {
+            document.getElementById("question-modal").style.display = "none";
+        }
+        
+        // Функция для перемещения элементов
+        function moveElements() {
+            elements.forEach(el => {
+                el.x += el.speedX;
+                el.y += el.speedY;
+                
+                // Отскок от границ
+                if (el.x <= 0 || el.x >= window.innerWidth - el.size) {
+                    el.speedX *= -1;
+                }
+                if (el.y <= 0 || el.y >= window.innerHeight - el.size) {
+                    el.speedY *= -1;
+                }
+                
+                el.element.style.left = `${el.x}px`;
+                el.element.style.top = `${el.y}px`;
+            });
+            
+            requestAnimationFrame(moveElements);
+        }
+        
+        // Вспомогательная функция
+        function getRandom(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        // Инициализация
+        window.onload = function() {
+            // Обработчики для панели управления
+            document.getElementById("generateBtn").addEventListener("click", function() {
+                const count = parseInt(document.getElementById("elementCount").value);
+                createElements(count);
+            });
+            
+            // Закрытие модального окна при клике вне его
+            document.addEventListener("click", function(e) {
+                if (e.target === document.getElementById("question-modal")) {
+                    closeQuestionModal();
+                }
+            });
+            
+            // Начальное создание элементов
+            createElements(5);
+            
+            // Запуск анимации
+            moveElements();
+            
+            // Обработка изменения размера окна
+            window.addEventListener("resize", function() {
+                elements.forEach(el => {
+                    if (el.x > window.innerWidth - el.size) el.x = window.innerWidth - el.size;
+                    if (el.y > window.innerHeight - el.size) el.y = window.innerHeight - el.size;
+                    el.element.style.left = `${el.x}px`;
+                    el.element.style.top = `${el.y}px`;
+                });
+            });
+        };
+    </script>
+</body>
+</html>
