@@ -119,7 +119,11 @@
         // Функция создания элементов
         function createElements(count) {
             // Удаляем старые элементы
-            elements.forEach(el => document.body.removeChild(el.element));
+            elements.forEach(el => {
+                if (el.element && el.element.parentNode) {
+                    document.body.removeChild(el.element);
+                }
+            });
             elements = [];
             
             // Создаем новые элементы
@@ -151,8 +155,10 @@
                     showQuestion(this.dataset.question);
                     this.style.opacity = "0";
                     setTimeout(() => {
-                        document.body.removeChild(this);
-                        elements = elements.filter(el => el.element !== this);
+                        if (this.parentNode) {
+                            document.body.removeChild(this);
+                            elements = elements.filter(el => el.element !== this);
+                        }
                     }, 500);
                 });
                 
@@ -183,16 +189,22 @@
         // Функция для перемещения элементов
         function moveElements() {
             elements.forEach(el => {
+                if (!el.element || !el.element.parentNode) return;
+                
                 // Плавное изменение позиции
-                el.x += el.speedX * 1;
-                el.y += el.speedY * 1;
+                el.x += el.speedX;
+                el.y += el.speedY;
                 
                 // Отскок от границ
                 if (el.x <= 0 || el.x >= window.innerWidth - el.size) {
                     el.speedX *= -0.9; // Мягкий отскок
+                    // Корректировка позиции, чтобы не застревали за границами
+                    el.x = Math.max(0, Math.min(el.x, window.innerWidth - el.size));
                 }
                 if (el.y <= 0 || el.y >= window.innerHeight - el.size) {
                     el.speedY *= -0.9; // Мягкий отскок
+                    // Корректировка позиции
+                    el.y = Math.max(0, Math.min(el.y, window.innerHeight - el.size));
                 }
                 
                 el.element.style.left = `${el.x}px`;
@@ -204,7 +216,7 @@
         
         // Вспомогательная функция
         function getRandom(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
+            return min + Math.random() * (max - min);
         }
         
         // Инициализация
@@ -212,6 +224,10 @@
             // Обработчики для панели управления
             document.getElementById("generateBtn").addEventListener("click", function() {
                 const count = parseInt(document.getElementById("elementCount").value);
+                if (isNaN(count) || count < 1 || count > 20) {
+                    alert("Пожалуйста, введите число от 1 до 20");
+                    return;
+                }
                 createElements(count);
             });
             
@@ -231,8 +247,12 @@
             // Обработка изменения размера окна
             window.addEventListener("resize", function() {
                 elements.forEach(el => {
-                    if (el.x > window.innerWidth - el.size) el.x = window.innerWidth - el.size;
-                    if (el.y > window.innerHeight - el.size) el.y = window.innerHeight - el.size;
+                    if (!el.element || !el.element.parentNode) return;
+                    
+                    // Корректировка позиции при изменении размера окна
+                    el.x = Math.max(0, Math.min(el.x, window.innerWidth - el.size));
+                    el.y = Math.max(0, Math.min(el.y, window.innerHeight - el.size));
+                    
                     el.element.style.left = `${el.x}px`;
                     el.element.style.top = `${el.y}px`;
                 });
