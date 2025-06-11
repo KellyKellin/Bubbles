@@ -7,10 +7,33 @@
     <style>
         body {
             margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        #container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        #controls-container {
+            background: #f5f5f5;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        #bubbles-container {
+            flex: 1;
+            position: relative;
             overflow: hidden;
             background: transparent;
-            font-family: Arial, sans-serif;
         }
+        
         .bubble {
             position: absolute;
             cursor: pointer;
@@ -24,20 +47,40 @@
         .bubble:hover {
             transform: scale(1.1);
         }
-        #controls {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(255,255,255,0.8);
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 1000;
+        
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
+        
+        .controls label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
         button {
-            padding: 5px 10px;
-            margin: 5px;
+            padding: 8px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
+            transition: background 0.3s;
         }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        input[type="number"] {
+            padding: 5px;
+            width: 50px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
         .question-modal {
             display: none;
             position: fixed;
@@ -70,10 +113,17 @@
     </style>
 </head>
 <body>
-    <div id="controls">
-        <label>Количество элементов: <input type="number" id="elementCount" value="5" min="1" max="20"></label>
-            <button id="generateBtn">Создать</button>
+    <div id="container">
+        <div id="controls-container">
+            <div class="controls">
+                <label>Количество элементов: 
+                    <input type="number" id="elementCount" value="5" min="1" max="20">
+                </label>
+                <button id="generateBtn">Создать</button>
+            </div>
         </div>
+        
+        <div id="bubbles-container"></div>
     </div>
 
     <div id="question-modal" class="question-modal">
@@ -85,6 +135,7 @@
     <script>
         // Глобальные переменные
         let elements = [];
+        const bubblesContainer = document.getElementById('bubbles-container');
         
         // Цвета для пузырьков
         const bubbleColors = [
@@ -119,7 +170,7 @@
             // Удаляем старые элементы
             elements.forEach(el => {
                 if (el.element && el.element.parentNode) {
-                    document.body.removeChild(el.element);
+                    bubblesContainer.removeChild(el.element);
                 }
             });
             elements = [];
@@ -136,16 +187,16 @@
                 
                 element.style.width = `${size}px`;
                 element.style.height = `${size}px`;
-                element.style.left = `${getRandom(0, window.innerWidth - size)}px`;
-                element.style.top = `${getRandom(0, window.innerHeight - size)}px`;
+                element.style.left = `${getRandom(0, bubblesContainer.clientWidth - size)}px`;
+                element.style.top = `${getRandom(0, bubblesContainer.clientHeight - size)}px`;
                 
                 // Назначаем уникальный вопрос (по кругу, если элементов больше чем вопросов)
                 const question = questions[i % questions.length];
                 element.dataset.question = question;
                 
                 // Настройка движения (значительно уменьшенная скорость)
-                const speedX = getRandom(1, 3) * (Math.random() > 0.5 ? 1 : -1);
-                const speedY = getRandom(1, 3) * (Math.random() > 0.5 ? 1 : -1);
+                const speedX = getRandom(1, 3);
+                const speedY = getRandom(1, 3);
                 
                 // Добавляем обработчик клика
                 element.addEventListener("click", function(e) {
@@ -154,13 +205,13 @@
                     this.style.opacity = "0";
                     setTimeout(() => {
                         if (this.parentNode) {
-                            document.body.removeChild(this);
+                            bubblesContainer.removeChild(this);
                             elements = elements.filter(el => el.element !== this);
                         }
                     }, 500);
                 });
                 
-                document.body.appendChild(element);
+                bubblesContainer.appendChild(element);
                 
                 elements.push({
                     element: element,
@@ -194,15 +245,15 @@
                 el.y += el.speedY;
                 
                 // Отскок от границ
-                if (el.x <= 0 || el.x >= window.innerWidth - el.size) {
+                if (el.x <= 0 || el.x >= bubblesContainer.clientWidth - el.size) {
                     el.speedX *= -0.9; // Мягкий отскок
                     // Корректировка позиции, чтобы не застревали за границами
-                    el.x = Math.max(0, Math.min(el.x, window.innerWidth - el.size));
+                    el.x = Math.max(0, Math.min(el.x, bubblesContainer.clientWidth - el.size));
                 }
-                if (el.y <= 0 || el.y >= window.innerHeight - el.size) {
+                if (el.y <= 0 || el.y >= bubblesContainer.clientHeight - el.size) {
                     el.speedY *= -0.9; // Мягкий отскок
                     // Корректировка позиции
-                    el.y = Math.max(0, Math.min(el.y, window.innerHeight - el.size));
+                    el.y = Math.max(0, Math.min(el.y, bubblesContainer.clientHeight - el.size));
                 }
                 
                 el.element.style.left = `${el.x}px`;
@@ -248,8 +299,8 @@
                     if (!el.element || !el.element.parentNode) return;
                     
                     // Корректировка позиции при изменении размера окна
-                    el.x = Math.max(0, Math.min(el.x, window.innerWidth - el.size));
-                    el.y = Math.max(0, Math.min(el.y, window.innerHeight - el.size));
+                    el.x = Math.max(0, Math.min(el.x, bubblesContainer.clientWidth - el.size));
+                    el.y = Math.max(0, Math.min(el.y, bubblesContainer.clientHeight - el.size));
                     
                     el.element.style.left = `${el.x}px`;
                     el.element.style.top = `${el.y}px`;
